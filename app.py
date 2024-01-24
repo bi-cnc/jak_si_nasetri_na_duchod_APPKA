@@ -62,16 +62,19 @@ def calculate_sp500_returns(sp500_data, czk_usd_rate, monthly_investment_czk, st
     return final_value_czk, profit_loss_czk, profit_loss_percentage, total_investment_czk, investment_duration_months
 
 
-# def plot_sp500_data(sp500_data, start_date, end_date):
-#    fig, ax = plt.subplots(figsize=(10, 6))
-#    ax.plot(sp500_data.index, sp500_data['Close'], label='S&P 500', color='blue')
+sp500_plot = yf.download("^GSPC", start=datetime(2010, 1, 1), end=datetime.now())
 
-#    ax.set_xlabel('Datum', fontweight='bold')
-#    ax.set_ylabel('Cena S&P 500 (USD)', fontweight='bold')
-#    ax.set_title('Historie ceny S&P 500', fontweight='bold', pad=10)
+def plot_sp500_data(sp500_plot, start_date, end_date):
+    fig, ax = plt.subplots(figsize=(10, 6))
+    ax.plot(sp500_plot.index, sp500_plot['Close'], label='S&P 500', color='purple')
 
-#    ax.legend()
-#    st.pyplot(fig)
+    ax.set_xlabel('Rok', fontweight='bold')
+    ax.set_ylabel('Cena S&P 500 (USD)', fontweight='bold')
+    ax.set_title('Historie ceny S&P 500', fontweight='bold', pad=10)
+
+    ax.legend()
+    st.pyplot(fig)
+
 import matplotlib.ticker as ticker
 def thousands_separator(x, pos):
     """Pomocná funkce pro formátování s mezerou jako oddělovačem tisíců."""
@@ -181,7 +184,7 @@ from datetime import date
 
 def main():
     st.title("Jak si našetřit více na důchod?")
-    large_font = "<h2 style='font-size:18px; color: black;'>Index S&P 500 nebo státní penzijní spoření? Podívejte se, jaký přístup by vám v minulých letech vydělal více peněz. 🚀</h2>"
+    large_font = "<h2 style='font-size:20px; color: black;'>Index S&P 500 🚀 nebo státní penzijní spoření? 📈 Podívejte se, jaký přístup by vám v minulých letech vydělal více peněz?</h2>"
     st.markdown(large_font, unsafe_allow_html=True)
     max_start_date = date.today() - timedelta(days=365)
     start_date = st.date_input("Začátek investičního období", datetime(2010, 1, 1),max_value=max_start_date)
@@ -216,6 +219,8 @@ def main():
             st.info(f"Celkově investovaná částka: {total_investment_czk:,.0f} Kč".replace(',', ' '))
             st.info(f"Celkový počet investičních měsíců: {investment_duration_months} měsíců")
             st.balloons()
+    st.write("")
+    plot_sp500_data(sp500_plot, start_date, end_date)
 
 if __name__ == "__main__":
     main()
