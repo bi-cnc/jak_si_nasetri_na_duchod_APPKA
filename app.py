@@ -62,9 +62,9 @@ def calculate_sp500_returns(sp500_data, czk_usd_rate, monthly_investment_czk, st
     return final_value_czk, profit_loss_czk, profit_loss_percentage, total_investment_czk, investment_duration_months
 
 
-sp500_plot = yf.download("^GSPC", start=datetime(2010, 1, 1), end=datetime.now())
 
 def plot_sp500_data(sp500_plot, start_date, end_date):
+    sp500_plot = yf.download("^GSPC", start=start_date, end=end_date)
     fig, ax = plt.subplots(figsize=(10, 6))
     ax.plot(sp500_plot.index, sp500_plot['Close'], label='S&P 500', color='purple')
 
