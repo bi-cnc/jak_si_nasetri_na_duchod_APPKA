@@ -196,7 +196,7 @@ def main():
 
     # Kontrola, zda je zvolený začátek investičního období dostatečně vzdálený od konce
     if start_date >= min_zacatek_investice:
-        st.error(f"Konec investičního období musí být od jeho začátku vzdálené minimálně {minimalni_delka_v_rokoch} rok.")
+        st.error(f"Konec investičního období musí být od jeho začátku vzdálený minimálně {minimalni_delka_v_rokoch} rok.")
     elif start_date >= end_date:
         st.error("Začátek investičního období musí být dříve než konec.")
     else:
