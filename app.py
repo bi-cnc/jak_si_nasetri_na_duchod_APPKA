@@ -190,7 +190,7 @@ def main():
     if start_date >= end_date:
         st.error("Začátek investičního období musí být dříve než konec.")
     else:
-        investment_options = [2000, 300, 500, 1000, 1500, 1700]
+        investment_options = [2000, 1700, 1500, 1000, 500, 300]
         monthly_investment_czk = st.selectbox("Měsíčně investovaná částka (Kč):", options=investment_options)
 
         if st.button("Spočítejte potenciální výnos"):
