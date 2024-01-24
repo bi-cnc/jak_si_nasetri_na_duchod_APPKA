@@ -4,6 +4,9 @@ from datetime import datetime, timedelta
 import matplotlib.pyplot as plt
 import pandas as pd
 
+# Nastavení Streamlitu
+st.set_option('deprecation.showPyplotGlobalUse', False)
+
 def fetch_financial_data(start_date, end_date):
     end_date_plus_one = end_date + timedelta(days=1)
 
