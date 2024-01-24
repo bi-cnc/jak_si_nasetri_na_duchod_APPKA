@@ -62,9 +62,6 @@ def calculate_sp500_returns(sp500_data, czk_usd_rate, monthly_investment_czk, st
     return final_value_czk, profit_loss_czk, profit_loss_percentage, total_investment_czk, investment_duration_months
 
 
-
-sp500_plot = yf.download("^GSPC", start=datetime(2010, 1, 1), end=datetime.now())
-
 def plot_sp500_data(sp500_plot, start_date, end_date):
     fig, ax = plt.subplots(figsize=(10, 6))
     ax.plot(sp500_plot.index, sp500_plot['Close'], label='S&P 500', color='purple')
@@ -75,7 +72,6 @@ def plot_sp500_data(sp500_plot, start_date, end_date):
 
     ax.legend()
     st.pyplot(fig)
-
 
 import matplotlib.ticker as ticker
 def thousands_separator(x, pos):
@@ -182,17 +178,26 @@ def calculate_pension_savings(monthly_investment_czk, start_date, end_date):
     return accumulated_value, total_investment_czk, total_state_contribution
 
 
-from datetime import date
+from datetime import date, timedelta
 
 def main():
     st.title("Jak si našetřit více na důchod?")
     large_font = "<h2 style='font-size:18px; color: black;'>Index S&P 500 nebo státní penzijní spoření? Podívejte se, jaký přístup by vám v minulých letech vydělal více peněz. 🚀</h2>"
     st.markdown(large_font, unsafe_allow_html=True)
     max_start_date = date.today() - timedelta(days=365)
-    start_date = st.date_input("Začátek investičního období", datetime(2010, 1, 1),max_value=max_start_date)
-    end_date = st.date_input("Konec investičního období", datetime.now())
+    start_date = st.date_input("Začátek investičního období", datetime(2010, 1, 1),max_value=max_start_date,min_value=datetime(2005, 1, 1))
+    end_date = st.date_input("Konec investičního období", datetime.now(),max_value=datetime.now())
 
-    if start_date >= end_date:
+    # Minimální délka investičního období v letech
+    minimalni_delka_v_rokoch = 1
+
+    # Výpočet minimálního začátku investičního období
+    min_zacatek_investice = end_date - timedelta(days=365 * minimalni_delka_v_rokoch)
+
+    # Kontrola, zda je zvolený začátek investičního období dostatečně vzdálený od konce
+    if start_date >= min_zacatek_investice:
+        st.error(f"Konec investičního období musí být od jeho začátku vzdálené minimálně {minimalni_delka_v_rokoch} rok.")
+    elif start_date >= end_date:
         st.error("Začátek investičního období musí být dříve než konec.")
     else:
         investment_options = [2000, 1700, 1500, 1000, 500, 300]
@@ -223,6 +228,7 @@ def main():
             st.balloons()
         else:
             st.write("")
+            sp500_plot = yf.download("^GSPC", start=start_date, end=end_date)
             plot_sp500_data(sp500_plot, start_date, end_date)
 
 if __name__ == "__main__":
