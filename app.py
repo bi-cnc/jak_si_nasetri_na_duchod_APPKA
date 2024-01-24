@@ -219,8 +219,9 @@ def main():
             st.info(f"Celkově investovaná částka: {total_investment_czk:,.0f} Kč".replace(',', ' '))
             st.info(f"Celkový počet investičních měsíců: {investment_duration_months} měsíců")
             st.balloons()
-    st.write("")
-    plot_sp500_data(sp500_plot, start_date, end_date)
+        else:
+            st.write("")
+            plot_sp500_data(sp500_plot, start_date, end_date)
 
 if __name__ == "__main__":
     main()
