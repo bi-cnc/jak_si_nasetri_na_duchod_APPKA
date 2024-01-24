@@ -181,7 +181,7 @@ from datetime import date
 
 def main():
     st.title("Jak si našetřit více na důchod?")
-    large_font = "<h2 style='font-size:18px; color: black;'>Index S&P 500 nebo státní penzijní spoření? Podívejte se, jaký přístup by vám v minulých letech vydělal více peněz? 🚀</h2>"
+    large_font = "<h2 style='font-size:18px; color: black;'>Index S&P 500 nebo státní penzijní spoření? Podívejte se, jaký přístup by vám v minulých letech vydělal více peněz. 🚀</h2>"
     st.markdown(large_font, unsafe_allow_html=True)
     max_start_date = date.today() - timedelta(days=365)
     start_date = st.date_input("Začátek investičního období", datetime(2010, 1, 1),max_value=max_start_date)
