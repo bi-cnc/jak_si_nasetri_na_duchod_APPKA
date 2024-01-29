@@ -1,4 +1,4 @@
-pandas
+pandas==1.5.3
 streamlit==1.30.0
 yfinance==0.2.33
 matplotlib==3.8.2
