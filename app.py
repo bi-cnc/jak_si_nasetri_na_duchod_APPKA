@@ -7,12 +7,24 @@ import pandas as pd
 # Nastavení Streamlitu
 st.set_option('deprecation.showPyplotGlobalUse', False)
 
+
 def fetch_financial_data(start_date, end_date):
     end_date_plus_one = end_date + timedelta(days=1)
 
     sp500_data = yf.download("^GSPC", start=start_date, end=end_date_plus_one)
     czk_usd_rate = yf.download("CZK=X", start=start_date, end=end_date_plus_one)
     return sp500_data, czk_usd_rate
+
+
+# Funkce pro kontrolu, zda je datum víkendem
+def is_weekend(input_date):
+    return input_date.weekday() >= 5
+
+# start_date = datetime(2010, 1, 29)
+# end_date = datetime(2024, 2, 29)
+
+# data = fetch_financial_data(start_date, end_date)
+
 
 def calculate_investment_months(start_date, end_date):
     total_months = (end_date.year - start_date.year) * 12 + end_date.month - start_date.month
@@ -25,41 +37,39 @@ def calculate_investment_months(start_date, end_date):
 
 def calculate_sp500_returns(sp500_data, czk_usd_rate, monthly_investment_czk, start_date, end_date):
     investment_duration_months = calculate_investment_months(start_date, end_date)
-    
-    # Získání posledního dostupného směnného kurzu
-    last_exchange_rate = czk_usd_rate['Close'].iloc[-1]
-    
-    # Výpočet měsíční investice v USD
-    monthly_investment_usd = monthly_investment_czk / last_exchange_rate
 
-    total_investment_usd = monthly_investment_usd * investment_duration_months
+    # Získání směnného kurzu pro začátek investice
+    start_exchange_rate = czk_usd_rate['Close'].get(start_date, czk_usd_rate['Close'].iloc[0])
+
+    # Výpočet měsíční investice v USD na začátku investice
+    monthly_investment_usd = monthly_investment_czk / start_exchange_rate
+
     total_investment_czk = monthly_investment_czk * investment_duration_months
 
-    # Výpočet konečné hodnoty investice v USD
     monthly_returns = (sp500_data['Close'].pct_change() + 1).resample('M').prod()
-    
-    # Inicializace proměnné pro ukládání akumulované hodnoty
     accumulated_value_usd = 0
-
-    # Seznam pro ukládání hodnot investice pro každý měsíc
     investment_values_czk = []
 
-    # Akumulace hodnoty investice pro každý měsíc
-    for monthly_return in monthly_returns:
-        # Přidání měsíční investice do akumulované hodnoty
+    # Pro každý měsíc v investičním období
+    for month in range(investment_duration_months):
+        # Přičtení měsíční investice
         accumulated_value_usd += monthly_investment_usd
-        # Aplikování měsíčního výnosu na akumulovanou hodnotu
-        accumulated_value_usd *= monthly_return
-        # Převod akumulované hodnoty zpět do CZK a uložení do seznamu
-        investment_values_czk.append(accumulated_value_usd * last_exchange_rate)
+        # Aplikace měsíčního výnosu
+        accumulated_value_usd *= monthly_returns.iloc[month]
 
-    # Výpočet konečné hodnoty investice v CZK
+        # Získání kurzu pro daný měsíc
+        month_date = start_date + pd.DateOffset(months=month)
+        monthly_exchange_rate = czk_usd_rate['Close'].get(month_date, czk_usd_rate['Close'].iloc[month])
+
+        # Převod hodnoty investice na CZK podle měsíčního kurzu
+        investment_values_czk.append(accumulated_value_usd * monthly_exchange_rate)
+
     final_value_czk = investment_values_czk[-1]
     profit_loss_czk = final_value_czk - total_investment_czk
-
     profit_loss_percentage = (profit_loss_czk / total_investment_czk) * 100
 
     return final_value_czk, profit_loss_czk, profit_loss_percentage, total_investment_czk, investment_duration_months
+
 
 
 def plot_sp500_data(sp500_plot, start_date, end_date):
@@ -79,31 +89,25 @@ def thousands_separator(x, pos):
     return f'{x:,.0f}'.replace(',', ' ')
 
 def plot_investment_growth(sp500_data, czk_usd_rate, monthly_investment_czk, start_date, end_date):
-    # Získání počtu měsíců investice
     investment_duration_months = calculate_investment_months(start_date, end_date)
-    # Získání posledního směnného kurzu pro převod
-    last_exchange_rate = czk_usd_rate['Close'].iloc[-1]
-    
-    # Výpočet měsíční investice v USD
-    monthly_investment_usd = monthly_investment_czk / last_exchange_rate
 
-    # Získání měsíčních výnosů S&P 500
+    # Získání směnného kurzu pro začátek a konec investice
+    start_exchange_rate = czk_usd_rate['Close'].get(start_date, czk_usd_rate['Close'].iloc[0])
+    end_exchange_rate = czk_usd_rate['Close'].get(end_date, czk_usd_rate['Close'].iloc[-1])
+
+    # Výpočet měsíční investice v USD na začátku investice
+    monthly_investment_usd = monthly_investment_czk / start_exchange_rate
+
     monthly_returns = (sp500_data['Close'].pct_change() + 1).resample('M').prod()
-
-    # Inicializace proměnné pro ukládání akumulované hodnoty
     accumulated_value_usd = 0
-
-    # Seznam pro ukládání hodnot investice pro každý měsíc
     investment_values_czk = []
 
-    # Akumulace hodnoty investice pro každý měsíc
     for monthly_return in monthly_returns:
-        # Přidání měsíční investice do akumulované hodnoty
         accumulated_value_usd += monthly_investment_usd
-        # Aplikování měsíčního výnosu na akumulovanou hodnotu
         accumulated_value_usd *= monthly_return
+
         # Převod akumulované hodnoty zpět do CZK a uložení do seznamu
-        investment_values_czk.append(accumulated_value_usd * last_exchange_rate)
+        investment_values_czk.append(accumulated_value_usd * end_exchange_rate)
 
     # Inicializace proměnné pro ukládání celkové vkládané částky
     total_invested_czk = 0
@@ -185,7 +189,7 @@ def main():
     large_font = "<h2 style='font-size:18px; color: black;'>Index S&P 500 nebo státní penzijní spoření? Podívejte se, jaký přístup by vám v minulých letech vydělal více peněz. 🚀</h2>"
     st.markdown(large_font, unsafe_allow_html=True)
     max_start_date = date.today() - timedelta(days=365)
-    start_date = st.date_input("Začátek investičního období", datetime(2010, 1, 1),max_value=max_start_date,min_value=datetime(2005, 1, 1))
+    start_date = st.date_input("Začátek investičního období", datetime(2010, 1, 4),max_value=max_start_date,min_value=datetime(2005, 1, 1))
     end_date = st.date_input("Konec investičního období", datetime.now(),max_value=datetime.now())
 
     # Minimální délka investičního období v letech
@@ -193,12 +197,23 @@ def main():
 
     # Výpočet minimálního začátku investičního období
     min_zacatek_investice = end_date - timedelta(days=365 * minimalni_delka_v_rokoch)
+    import pandas_market_calendars as mcal
+
+    nyse = mcal.get_calendar('NYSE')
+    prazdniny = nyse.holidays().holidays
+
+    # Převod seznamu prázdnin na seznam dat
+    seznam_prazdnin = [pd.to_datetime(d).date() for d in prazdniny]
 
     # Kontrola, zda je zvolený začátek investičního období dostatečně vzdálený od konce
     if start_date >= min_zacatek_investice:
         st.error(f"Konec investičního období musí být od jeho začátku vzdálený minimálně {minimalni_delka_v_rokoch} rok.")
     elif start_date >= end_date:
         st.error("Začátek investičního období musí být dříve než konec.")
+    elif start_date.weekday() >= 5 or start_date in seznam_prazdnin:
+        st.error("Zvolený začátek investice připadá na víkend nebo burzovní prázdniny. Prosím, vyberte pracovní den.")
+    elif end_date.weekday() >= 5 or end_date in seznam_prazdnin:
+        st.error("Zvolený konec investice připadá na víkend nebo burzovní prázdniny. Prosím, vyberte pracovní den.")
     else:
         investment_options = [2000, 1700, 1500, 1000, 500, 300]
         monthly_investment_czk = st.selectbox("Měsíčně investovaná částka (Kč):", options=investment_options)
