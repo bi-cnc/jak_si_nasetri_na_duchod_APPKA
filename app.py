@@ -34,6 +34,17 @@ def calculate_investment_months(start_date, end_date):
 
     return total_months
 
+def plot_sp500_data(sp500_plot, start_date, end_date):
+    fig, ax = plt.subplots(figsize=(10, 6))
+    ax.plot(sp500_plot.index, sp500_plot['Close'], label='S&P 500', color='purple')
+
+    ax.set_xlabel('Rok', fontweight='bold')
+    ax.set_ylabel('Cena S&P 500 (USD)', fontweight='bold')
+    ax.set_title('Historie ceny S&P 500', fontweight='bold', pad=10)
+
+    ax.legend()
+    st.pyplot(fig)
+
 
 def calculate_sp500_returns(sp500_data, czk_usd_rate, monthly_investment_czk, start_date, end_date):
     investment_duration_months = calculate_investment_months(start_date, end_date)
@@ -71,17 +82,19 @@ def calculate_sp500_returns(sp500_data, czk_usd_rate, monthly_investment_czk, st
     return final_value_czk, profit_loss_czk, profit_loss_percentage, total_investment_czk, investment_duration_months
 
 
+def calculate_average_annual_return(final_value_czk, total_investment_czk, start_date, end_date):
+    # Celkový počet let investice
+    years = (end_date - start_date).days / 365.25
 
-def plot_sp500_data(sp500_plot, start_date, end_date):
-    fig, ax = plt.subplots(figsize=(10, 6))
-    ax.plot(sp500_plot.index, sp500_plot['Close'], label='S&P 500', color='purple')
+    # Výpočet CAGR
+    cagr = (final_value_czk / total_investment_czk) ** (1 / years) - 1
 
-    ax.set_xlabel('Rok', fontweight='bold')
-    ax.set_ylabel('Cena S&P 500 (USD)', fontweight='bold')
-    ax.set_title('Historie ceny S&P 500', fontweight='bold', pad=10)
+    # Převod CAGR na procenta
+    cagr_percentage = cagr * 100
 
-    ax.legend()
-    st.pyplot(fig)
+    return cagr_percentage
+
+
 
 import matplotlib.ticker as ticker
 def thousands_separator(x, pos):
@@ -122,29 +135,13 @@ def plot_investment_growth(sp500_data, czk_usd_rate, monthly_investment_czk, sta
         # Převod celkové vkládané částky na seznam pro každý měsíc
         invested_values_czk.append(total_invested_czk)
 
-     # Výpočet hodnoty penzijního spoření pro každý měsíc
-    state_contribution = {
-        300: 90,
-        500: 130,
-        1000: 230,
-        1500: 230,
-        1700: 230,
-        2000: 230
-    }
-    monthly_state_contribution = state_contribution.get(monthly_investment_czk, 0)
-    pension_values_czk = []
-    accumulated_pension_value = 0
-    for _ in range(investment_duration_months):
-        accumulated_pension_value += monthly_investment_czk + monthly_state_contribution
-        pension_values_czk.append(accumulated_pension_value)
 
     # Vytvoření grafu hodnoty investice
     fig, ax = plt.subplots(figsize=(10, 6))
     investment_dates = pd.date_range(start_date, periods=len(investment_values_czk), freq='M')
 
     # Vykreslení S&P 500 a penzijního spoření
-    ax.plot(investment_dates, investment_values_czk, label='Hodnota investice S&P 500', color='green')
-    ax.plot(investment_dates, pension_values_czk, label='Hodnota státního penzijního spoření', color='red')
+    ax.plot(investment_dates, investment_values_czk, label='Hodnota investice S&P 500', color='purple')
     ax.plot(investment_dates, invested_values_czk, linestyle='dashed', color='blue', label='Vložená částka celkem')
 
     # Nastavení formátu popisků na ose Y
@@ -158,35 +155,17 @@ def plot_investment_growth(sp500_data, czk_usd_rate, monthly_investment_czk, sta
 
     ax.legend()
     st.pyplot(fig)
-
-def calculate_pension_savings(monthly_investment_czk, start_date, end_date):
-    state_contribution = {
-        300: 90,
-        500: 130,
-        1000: 230,
-        1500: 230,
-        1700: 230,
-        2000: 230
-    }
-
-    # Získání státního příspěvku na základě měsíčního vkladu
-    monthly_state_contribution = state_contribution.get(monthly_investment_czk, 0)
     
-    investment_duration_months = calculate_investment_months(start_date, end_date)
-
-    # Výpočet celkové hodnoty penzijního spoření
-    total_investment_czk = monthly_investment_czk * investment_duration_months
-    total_state_contribution = monthly_state_contribution * investment_duration_months
-    accumulated_value = total_investment_czk + total_state_contribution
-
-    return accumulated_value, total_investment_czk, total_state_contribution
-
-
 from datetime import date, timedelta
 
 def main():
     st.title("Jak si našetřit více na důchod?")
-    large_font = "<h2 style='font-size:18px; color: black;'>Index S&P 500 nebo státní penzijní spoření? Podívejte se, jaký přístup by vám v minulých letech vydělal více peněz. 🚀</h2>"
+    large_font = """
+    <h2 style='font-size:18px; color: black; line-height: 1.5;'>
+    Jak by se vám peníze šetřené na důchod zhodnotily v burzovním indexu S&P 500? 
+    Podívejte se, kolik byste vydělali, kdybyste začali pravidelně investovat před 10 nebo třeba 15 lety. 🚀
+    </h2>
+    """    
     st.markdown(large_font, unsafe_allow_html=True)
     max_start_date = date.today() - timedelta(days=365)
     start_date = st.date_input("Začátek investičního období", datetime(2010, 1, 4),max_value=max_start_date,min_value=datetime(2005, 1, 1))
@@ -215,28 +194,20 @@ def main():
     elif end_date.weekday() >= 5 or end_date in seznam_prazdnin:
         st.error("Zvolený konec investice připadá na víkend nebo burzovní prázdniny. Prosím, vyberte pracovní den.")
     else:
-        investment_options = [2000, 1700, 1500, 1000, 500, 300]
-        monthly_investment_czk = st.selectbox("Měsíčně investovaná částka (Kč):", options=investment_options)
+        monthly_investment_czk = st.slider("Měsíčně investovaná částka (Kč):", min_value=2000, max_value=20000, step=1000, value=10000,format="%.0f Kč")
 
         if st.button("Spočítejte potenciální výnos"):
             sp500_data, czk_usd_rate = fetch_financial_data(start_date, end_date)
             final_value_czk, profit_loss_czk, profit_loss_percentage, total_investment_czk, investment_duration_months = calculate_sp500_returns(sp500_data, czk_usd_rate, monthly_investment_czk, start_date, end_date)
 
-            final_value_czk_pension = calculate_pension_savings(monthly_investment_czk, start_date, end_date)
-
-            final_value_czk_pension, total_invested_czk_pension, _ = calculate_pension_savings(monthly_investment_czk, start_date, end_date)
-            profit_loss_czk_pension = final_value_czk_pension - total_invested_czk_pension
-            profit_loss_percentage_pension = (profit_loss_czk_pension / total_invested_czk_pension) * 100
-
             # plot_sp500_data(sp500_data, start_date, end_date)
             formatted_profit_loss_percentage = f"{profit_loss_percentage:+.0f} %"  # Přidání znaménka
             plot_investment_growth(sp500_data, czk_usd_rate, monthly_investment_czk, start_date, end_date)  # Přidání chybějícího argumentu 'end_date'
             st.success(f"Zhodnocení investice do S&P 500: {final_value_czk:,.0f} Kč ({formatted_profit_loss_percentage})".replace(',', ' '))
-
-
-            final_value_czk_pension, _, _ = calculate_pension_savings(monthly_investment_czk, start_date, end_date)
-            formatted_profit_loss_percentage_pension = f"{profit_loss_percentage_pension:+.0f} %"
-            st.error(f"Zhodnocení stáního penzijního spoření: {final_value_czk_pension:,.0f} Kč ({formatted_profit_loss_percentage_pension})".replace(',', ' '))
+            # Volání funkce po výpočtu zisku/ztráty
+            cagr_percentage = calculate_average_annual_return(final_value_czk, total_investment_czk, start_date, end_date)
+            # Zobrazení průměrného ročního výnosu uživateli
+            st.success(f"Průměrný roční výnos: {cagr_percentage:.2f} %")
 
             st.info(f"Celkově investovaná částka: {total_investment_czk:,.0f} Kč".replace(',', ' '))
             st.info(f"Celkový počet investičních měsíců: {investment_duration_months} měsíců")
