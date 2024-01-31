@@ -7,13 +7,23 @@ import pandas as pd
 # Nastavení Streamlitu
 st.set_option('deprecation.showPyplotGlobalUse', False)
 
-
+@st.cache
 def fetch_financial_data(start_date, end_date):
-    end_date_plus_one = end_date + timedelta(days=1)
+    try:
+        end_date_plus_one = end_date + timedelta(days=1)
 
-    sp500_data = yf.download("^GSPC", start=start_date, end=end_date_plus_one)
-    czk_usd_rate = yf.download("CZK=X", start=start_date, end=end_date_plus_one)
-    return sp500_data, czk_usd_rate
+        sp500_data = yf.download("^GSPC", start=start_date, end=end_date_plus_one)
+        czk_usd_rate = yf.download("CZK=X", start=start_date, end=end_date_plus_one)
+        
+        # Kontrola, zda byla data úspěšně načtena
+        if sp500_data.empty or czk_usd_rate.empty:
+            st.error("Nepodařilo se načíst finanční data. Zkuste prosím jiné datum nebo zkuste později.")
+            return None, None
+
+        return sp500_data, czk_usd_rate
+    except Exception as e:
+        st.error(f"Nastala chyba při načítání dat: {e}")
+        return None, None
 
 
 # Funkce pro kontrolu, zda je datum víkendem
